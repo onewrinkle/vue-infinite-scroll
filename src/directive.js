@@ -1,14 +1,14 @@
-const ctx = '@@InfiniteScroll';
+const ctx = "@@InfiniteScroll";
 
-var throttle = function (fn, delay) {
+var throttle = function(fn, delay) {
   var now, lastExec, timer, context, args; //eslint-disable-line
 
-  var execute = function () {
+  var execute = function() {
     fn.apply(context, args);
     lastExec = now;
   };
 
-  return function () {
+  return function() {
     context = this;
     args = arguments;
 
@@ -34,9 +34,12 @@ var throttle = function (fn, delay) {
   };
 };
 
-var getScrollTop = function (element) {
+var getScrollTop = function(element) {
   if (element === window) {
-    return Math.max(window.pageYOffset || 0, document.documentElement.scrollTop);
+    return Math.max(
+      window.pageYOffset || 0,
+      document.documentElement.scrollTop
+    );
   }
 
   return element.scrollTop;
@@ -44,12 +47,17 @@ var getScrollTop = function (element) {
 
 var getComputedStyle = document.defaultView.getComputedStyle;
 
-var getScrollEventTarget = function (element) {
+var getScrollEventTarget = function(element) {
   var currentNode = element;
   // bugfix, see http://w3help.org/zh-cn/causes/SD9013 and http://stackoverflow.com/questions/17016740/onscroll-function-is-not-working-for-chrome
-  while (currentNode && currentNode.tagName !== 'HTML' && currentNode.tagName !== 'BODY' && currentNode.nodeType === 1) {
+  while (
+    currentNode &&
+    currentNode.tagName !== "HTML" &&
+    currentNode.tagName !== "BODY" &&
+    currentNode.nodeType === 1
+  ) {
     var overflowY = getComputedStyle(currentNode).overflowY;
-    if (overflowY === 'scroll' || overflowY === 'auto') {
+    if (overflowY === "scroll" || overflowY === "auto") {
       return currentNode;
     }
     currentNode = currentNode.parentNode;
@@ -57,7 +65,7 @@ var getScrollEventTarget = function (element) {
   return window;
 };
 
-var getVisibleHeight = function (element) {
+var getVisibleHeight = function(element) {
   if (element === window) {
     return document.documentElement.clientHeight;
   }
@@ -65,17 +73,17 @@ var getVisibleHeight = function (element) {
   return element.clientHeight;
 };
 
-var getElementTop = function (element) {
+var getElementTop = function(element) {
   if (element === window) {
     return getScrollTop(window);
   }
   return element.getBoundingClientRect().top + getScrollTop(window);
 };
 
-var isAttached = function (element) {
+var isAttached = function(element) {
   var currentNode = element.parentNode;
   while (currentNode) {
-    if (currentNode.tagName === 'HTML') {
+    if (currentNode.tagName === "HTML") {
       return true;
     }
     if (currentNode.nodeType === 11) {
@@ -86,17 +94,21 @@ var isAttached = function (element) {
   return false;
 };
 
-var doBind = function () {
+var doBind = function() {
   if (this.binded) return; // eslint-disable-line
   this.binded = true;
 
   var directive = this;
   var element = directive.el;
 
-  var throttleDelayExpr = element.getAttribute('infinite-scroll-throttle-delay');
+  var throttleDelayExpr = element.getAttribute(
+    "infinite-scroll-throttle-delay"
+  );
   var throttleDelay = 200;
   if (throttleDelayExpr) {
-    throttleDelay = Number(directive.vm[throttleDelayExpr] || throttleDelayExpr);
+    throttleDelay = Number(
+      directive.vm[throttleDelayExpr] || throttleDelayExpr
+    );
     if (isNaN(throttleDelay) || throttleDelay < 0) {
       throttleDelay = 200;
     }
@@ -104,14 +116,23 @@ var doBind = function () {
   directive.throttleDelay = throttleDelay;
 
   directive.scrollEventTarget = getScrollEventTarget(element);
-  directive.scrollListener = throttle(doCheck.bind(directive), directive.throttleDelay);
-  directive.scrollEventTarget.addEventListener('scroll', directive.scrollListener);
+  directive.scrollListener = throttle(
+    doCheck.bind(directive),
+    directive.throttleDelay
+  );
+  directive.scrollEventTarget.addEventListener(
+    "scroll",
+    directive.scrollListener
+  );
 
-  this.vm.$on('hook:beforeDestroy', function () {
-    directive.scrollEventTarget.removeEventListener('scroll', directive.scrollListener);
+  this.vm.$on("hook:beforeDestroy", function() {
+    directive.scrollEventTarget.removeEventListener(
+      "scroll",
+      directive.scrollListener
+    );
   });
 
-  var disabledExpr = element.getAttribute('infinite-scroll-disabled');
+  var disabledExpr = element.getAttribute("infinite-scroll-disabled");
   var disabled = false;
 
   if (disabledExpr) {
@@ -125,7 +146,7 @@ var doBind = function () {
   }
   directive.disabled = disabled;
 
-  var distanceExpr = element.getAttribute('infinite-scroll-distance');
+  var distanceExpr = element.getAttribute("infinite-scroll-distance");
   var distance = 0;
   if (distanceExpr) {
     distance = Number(directive.vm[distanceExpr] || distanceExpr);
@@ -135,7 +156,9 @@ var doBind = function () {
   }
   directive.distance = distance;
 
-  var immediateCheckExpr = element.getAttribute('infinite-scroll-immediate-check');
+  var immediateCheckExpr = element.getAttribute(
+    "infinite-scroll-immediate-check"
+  );
   var immediateCheck = true;
   if (immediateCheckExpr) {
     immediateCheck = Boolean(directive.vm[immediateCheckExpr]);
@@ -146,18 +169,26 @@ var doBind = function () {
     doCheck.call(directive);
   }
 
-  var eventName = element.getAttribute('infinite-scroll-listen-for-event');
+  var eventName = element.getAttribute("infinite-scroll-listen-for-event");
   if (eventName) {
     directive.vm.$on(eventName, function() {
       doCheck.call(directive);
     });
   }
+
+  var isReversedExpr = element.getAttribute("infinite-scroll-reversed");
+  var isReversed = false;
+  if (typeof isReversedExpr != "undefined") {
+    isReversed = true;
+  }
+  directive.isReversed = isReversed;
 };
 
-var doCheck = function (force) {
+var doCheck = function(force) {
   var scrollEventTarget = this.scrollEventTarget;
   var element = this.el;
   var distance = this.distance;
+  var isReversed = this.isReversed;
 
   if (force !== true && this.disabled) return; //eslint-disable-line
   var viewportScrollTop = getScrollTop(scrollEventTarget);
@@ -166,11 +197,19 @@ var doCheck = function (force) {
   var shouldTrigger = false;
 
   if (scrollEventTarget === element) {
-    shouldTrigger = scrollEventTarget.scrollHeight - viewportBottom <= distance;
+    if (isReversed) shouldTrigger = viewportScrollTop <= distance;
+    else
+      shouldTrigger =
+        scrollEventTarget.scrollHeight - viewportBottom <= distance;
   } else {
-    var elementBottom = getElementTop(element) - getElementTop(scrollEventTarget) + element.offsetHeight + viewportScrollTop;
+    var elementBottom =
+      getElementTop(element) -
+      getElementTop(scrollEventTarget) +
+      element.offsetHeight +
+      viewportScrollTop;
 
-    shouldTrigger = viewportBottom + distance >= elementBottom;
+    if (isReversed) shouldTrigger = viewportScrollTop <= distance;
+    else shouldTrigger = viewportBottom + distance >= elementBottom;
   }
 
   if (shouldTrigger && this.expression) {
@@ -186,15 +225,15 @@ export default {
       expression: binding.value
     };
     const args = arguments;
-    el[ctx].vm.$on('hook:mounted', function () {
-      el[ctx].vm.$nextTick(function () {
+    el[ctx].vm.$on("hook:mounted", function() {
+      el[ctx].vm.$nextTick(function() {
         if (isAttached(el)) {
           doBind.call(el[ctx], args);
         }
 
         el[ctx].bindTryCount = 0;
 
-        var tryBind = function () {
+        var tryBind = function() {
           if (el[ctx].bindTryCount > 10) return; //eslint-disable-line
           el[ctx].bindTryCount++;
           if (isAttached(el)) {
@@ -211,6 +250,9 @@ export default {
 
   unbind(el) {
     if (el && el[ctx] && el[ctx].scrollEventTarget)
-      el[ctx].scrollEventTarget.removeEventListener('scroll', el[ctx].scrollListener);
+      el[ctx].scrollEventTarget.removeEventListener(
+        "scroll",
+        el[ctx].scrollListener
+      );
   }
 };

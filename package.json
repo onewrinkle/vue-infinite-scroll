@@ -40,5 +40,6 @@
       "browser"
     ],
     "space": true
-  }
+  },
+  "dependencies": {}
 }
